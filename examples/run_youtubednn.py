@@ -46,10 +46,8 @@ if __name__ == "__main__":
                             SparseFeat("age", feature_max_idx['age'], embedding_dim),
                             SparseFeat("occupation", feature_max_idx['occupation'], embedding_dim),
                             SparseFeat("zip", feature_max_idx['zip'], embedding_dim),
-                            VarLenSparseFeat(SparseFeat('hist_movie_id', feature_max_idx['movie_id'], embedding_dim,
-                                                        embedding_name="movie_id"), SEQ_LEN, 'mean', 'hist_len'),
-                            VarLenSparseFeat(SparseFeat('hist_genres', feature_max_idx['genres'], embedding_dim,
-                                                        embedding_name="genres"), SEQ_LEN, 'mean', 'hist_len')
+                            VarLenSparseFeat(SparseFeat('hist_movie_id', feature_max_idx['movie_id'], embedding_dim, embedding_name="movie_id"), SEQ_LEN, 'mean', 'hist_len'),
+                            VarLenSparseFeat(SparseFeat('hist_genres', feature_max_idx['genres'], embedding_dim, embedding_name="genres"), SEQ_LEN, 'mean', 'hist_len')
                             ]
 
     item_feature_columns = [SparseFeat('movie_id', feature_max_idx['movie_id'], embedding_dim)]
@@ -69,15 +67,12 @@ if __name__ == "__main__":
     else:
         K.set_learning_phase(True)
 
-    model = YoutubeDNN(user_feature_columns, item_feature_columns, user_dnn_hidden_units=(64, embedding_dim),
-                       sampler_config=sampler_config)
-    # model = MIND(user_feature_columns, item_feature_columns, dynamic_k=False, k_max=2,
-    #              user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
+    # model = YoutubeDNN(user_feature_columns, item_feature_columns, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
+    model = MIND(user_feature_columns, item_feature_columns, dynamic_k=False, k_max=2, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
 
     model.compile(optimizer="adam", loss=sampledsoftmaxloss)
 
-    history = model.fit(train_model_input, train_label,  # train_label,
-                        batch_size=256, epochs=1, verbose=1, validation_split=0.0, )
+    history = model.fit(train_model_input, train_label, batch_size=256, epochs=10, verbose=1, validation_split=0.0, )
 
     # 4. Generate user features for testing and full item features for retrieval
     test_user_model_input = test_model_input

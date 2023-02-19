@@ -100,11 +100,11 @@ def gen_model_input(train_set, user_profile, seq_max_len):
     train_seq_genres = np.array([line[5] for line in train_set])
     train_genres = np.array([line[6] for line in train_set])
     train_seq_pad = pad_sequences(train_seq, maxlen=seq_max_len, padding='post', truncating='post', value=0)
-    # train_seq_genres_pad = pad_sequences(train_seq_genres, maxlen=seq_max_len, padding='post', truncating='post', value=0)
+    train_seq_genres_pad = pad_sequences(train_seq_genres, maxlen=seq_max_len, padding='post', truncating='post', value=0)
     train_model_input = {"user_id": train_uid,
                          "movie_id": train_iid,
                          "hist_movie_id": train_seq_pad,
-                         # "hist_genres": train_seq_genres_pad,
+                         "hist_genres": train_seq_genres_pad,
                          "hist_len": train_hist_len, "genres": train_genres}
 
     for key in ["gender", "age", "occupation", "zip"]:
