@@ -67,8 +67,8 @@ if __name__ == "__main__":
     else:
         K.set_learning_phase(True)
 
-    # model = YoutubeDNN(user_feature_columns, item_feature_columns, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
-    model = MIND(user_feature_columns, item_feature_columns, dynamic_k=False, k_max=2, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
+    model = YoutubeDNN(user_feature_columns, item_feature_columns, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
+    # model = MIND(user_feature_columns, item_feature_columns, dynamic_k=False, k_max=2, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
 
     model.compile(optimizer="adam", loss=sampledsoftmaxloss)
 
@@ -89,45 +89,45 @@ if __name__ == "__main__":
 
     # 5. [Optional] ANN search by faiss  and evaluate the result
 
-    # import heapq
-    # from collections import defaultdict
-    # from tqdm import tqdm
-    # import numpy as np
-    # import faiss
-    # from deepmatch.utils import recall_N
-    # 
-    # k_max = 2
-    # topN = 50
-    # test_true_label = {line[0]: [line[1]] for line in test_set}
-    # 
-    # index = faiss.IndexFlatIP(embedding_dim)
-    # # faiss.normalize_L2(item_embs)
-    # index.add(item_embs)
-    # # faiss.normalize_L2(user_embs)
-    # 
-    # if len(user_embs.shape) == 2:  # multi interests model's shape = 3 (MIND,ComiRec)
-    #     user_embs = np.expand_dims(user_embs, axis=1)
-    # 
-    # score_dict = defaultdict(dict)
-    # for k in range(k_max):
-    #     user_emb = user_embs[:, k, :]
-    #     D, I = index.search(np.ascontiguousarray(user_emb), topN)
-    #     for i, uid in tqdm(enumerate(test_user_model_input['user_id']), total=len(test_user_model_input['user_id'])):
-    #         if np.abs(user_emb[i]).max() < 1e-8:
-    #             continue
-    #         for score, itemid in zip(D[i], I[i]):
-    #             score_dict[uid][itemid] = max(score, score_dict[uid].get(itemid, float("-inf")))
-    # 
-    # s = []
-    # hit = 0
-    # for i, uid in enumerate(test_user_model_input['user_id']):
-    #     pred = [item_profile['movie_id'].values[x[0]] for x in
-    #             heapq.nlargest(topN, score_dict[uid].items(), key=lambda x: x[1])]
-    #     filter_item = None
-    #     recall_score = recall_N(test_true_label[uid], pred, N=topN)
-    #     s.append(recall_score)
-    #     if test_true_label[uid] in pred:
-    #         hit += 1
-    # 
-    # print("recall", np.mean(s))
-    # print("hr", hit / len(test_user_model_input['user_id']))
+    import heapq
+    from collections import defaultdict
+    from tqdm import tqdm
+    import numpy as np
+    import faiss
+    from deepmatch.utils import recall_N
+
+    k_max = 2
+    topN = 50
+    test_true_label = {line[0]: [line[1]] for line in test_set}
+
+    index = faiss.IndexFlatIP(embedding_dim)
+    # faiss.normalize_L2(item_embs)
+    index.add(item_embs)
+    # faiss.normalize_L2(user_embs)
+
+    if len(user_embs.shape) == 2:  # multi interests model's shape = 3 (MIND,ComiRec)
+        user_embs = np.expand_dims(user_embs, axis=1)
+
+    score_dict = defaultdict(dict)
+    for k in range(k_max):
+        user_emb = user_embs[:, k, :]
+        D, I = index.search(np.ascontiguousarray(user_emb), topN)
+        for i, uid in tqdm(enumerate(test_user_model_input['user_id']), total=len(test_user_model_input['user_id'])):
+            if np.abs(user_emb[i]).max() < 1e-8:
+                continue
+            for score, itemid in zip(D[i], I[i]):
+                score_dict[uid][itemid] = max(score, score_dict[uid].get(itemid, float("-inf")))
+
+    s = []
+    hit = 0
+    for i, uid in enumerate(test_user_model_input['user_id']):
+        pred = [item_profile['movie_id'].values[x[0]] for x in
+                heapq.nlargest(topN, score_dict[uid].items(), key=lambda x: x[1])]
+        filter_item = None
+        recall_score = recall_N(test_true_label[uid], pred, N=topN)
+        s.append(recall_score)
+        if test_true_label[uid] in pred:
+            hit += 1
+
+    print("recall", np.mean(s))
+    print("hr", hit / len(test_user_model_input['user_id']))
