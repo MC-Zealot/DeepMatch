@@ -23,13 +23,27 @@ def gen_data_set(data, seq_max_len=50, negsample=0):
             genres_hist = genres_list[:i]
             seq_len = min(i, seq_max_len)
             if i != len(pos_list) - 1:
+                t = hist[::-1]
+                t2 = t[:seq_len]
                 train_set.append((
-                    reviewerID, pos_list[i], 1, hist[::-1][:seq_len], seq_len, genres_hist[::-1][:seq_len],
+                    reviewerID,
+                    pos_list[i],
+                    1,
+                    hist[::-1][:seq_len],
+                    seq_len,
+                    genres_hist[::-1][:seq_len],
                     genres_list[i],
-                    rating_list[i]))
+                    rating_list[i]
+                ))
                 for negi in range(negsample):
-                    train_set.append((reviewerID, neg_list[i * negsample + negi], 0, hist[::-1][:seq_len], seq_len,
-                                      genres_hist[::-1][:seq_len], item_id_genres_map[neg_list[i * negsample + negi]]))
+                    train_set.append((
+                        reviewerID,
+                        neg_list[i * negsample + negi],
+                        0, hist[::-1][:seq_len],
+                        seq_len,
+                        genres_hist[::-1][:seq_len],
+                        item_id_genres_map[neg_list[i * negsample + negi]]
+                    ))
             else:
                 test_set.append((reviewerID, pos_list[i], 1, hist[::-1][:seq_len], seq_len, genres_hist[::-1][:seq_len],
                                  genres_list[i],
@@ -86,10 +100,11 @@ def gen_model_input(train_set, user_profile, seq_max_len):
     train_seq_genres = np.array([line[5] for line in train_set])
     train_genres = np.array([line[6] for line in train_set])
     train_seq_pad = pad_sequences(train_seq, maxlen=seq_max_len, padding='post', truncating='post', value=0)
-    train_seq_genres_pad = pad_sequences(train_seq_genres, maxlen=seq_max_len, padding='post', truncating='post',
-                                         value=0)
-    train_model_input = {"user_id": train_uid, "movie_id": train_iid, "hist_movie_id": train_seq_pad,
-                         "hist_genres": train_seq_genres_pad,
+    # train_seq_genres_pad = pad_sequences(train_seq_genres, maxlen=seq_max_len, padding='post', truncating='post', value=0)
+    train_model_input = {"user_id": train_uid,
+                         "movie_id": train_iid,
+                         "hist_movie_id": train_seq_pad,
+                         # "hist_genres": train_seq_genres_pad,
                          "hist_len": train_hist_len, "genres": train_genres}
 
     for key in ["gender", "age", "occupation", "zip"]:
