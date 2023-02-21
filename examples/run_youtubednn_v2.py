@@ -1,16 +1,19 @@
+import sys
+sys.path.append("/home/hdp-portrait/git/DeepMatch")
+
 import pandas as pd
 from deepctr.feature_column import SparseFeat, VarLenSparseFeat
 from deepmatch.models import *
 from deepmatch.utils import sampledsoftmaxloss, NegativeSampler
-from preprocess import gen_data_set, gen_model_input
+from preprocess import *
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import Model
 
 if __name__ == "__main__":
 
-    data = pd.read_csvdata = pd.read_csv("./movielens_sample.txt")
-    data['genres'] = list(map(lambda x: x.split('|')[0], data['genres'].values))
+    data = pd.read_csvdata = pd.read_csv("./traindata_all.log",sep="\t")
+    # data['genres'] = list(map(lambda x: x.split('|')[0], data['genres'].values))
 
     sparse_features = ["img_id",
                        "uid",
@@ -42,10 +45,10 @@ if __name__ == "__main__":
 
     user_item_list = data.groupby("uid")['img_id'].apply(list)
 
-    train_set, test_set = gen_data_set(data, SEQ_LEN, 0)
+    train_set, test_set = gen_data_set_v2(data, SEQ_LEN, 0)
 
-    train_model_input, train_label = gen_model_input(train_set, user_profile, SEQ_LEN)
-    test_model_input, test_label = gen_model_input(test_set, user_profile, SEQ_LEN)
+    train_model_input, train_label = gen_model_input_v2(train_set, user_profile, SEQ_LEN)
+    test_model_input, test_label = gen_model_input_v2(test_set, user_profile, SEQ_LEN)
 
     # 2.count #unique features for each sparse field and generate feature config for sequence feature
 
