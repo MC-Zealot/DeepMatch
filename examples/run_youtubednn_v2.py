@@ -12,9 +12,19 @@ if __name__ == "__main__":
     data = pd.read_csvdata = pd.read_csv("./movielens_sample.txt")
     data['genres'] = list(map(lambda x: x.split('|')[0], data['genres'].values))
 
-    sparse_features = ["movie_id", "user_id",
-                       "gender", "age", "occupation", "zip", "genres"]
-    SEQ_LEN = 50
+    sparse_features = ["img_id",
+                       "uid",
+                       "serverprovince",
+                       "servercity",
+                       "city_level",
+                       "nettype",
+                       "model",
+                       "os",
+                       "osversion",
+                       "brand"
+                       ]
+    SEQ_LEN = 10
+    embedding_dim = 10
 
     # 1.Label Encoding for sparse features,and process sequence features with `gen_date_set` and `gen_model_input`
 
@@ -24,13 +34,13 @@ if __name__ == "__main__":
         data[feature] = lbe.fit_transform(data[feature]) + 1
         feature_max_idx[feature] = data[feature].max() + 1
 
-    user_profile = data[["user_id", "gender", "age", "occupation", "zip"]].drop_duplicates('user_id')
+    user_profile = data[["uid", "serverprovince", "servercity", "city_level", "nettype","model","os","osversion","brand"]].drop_duplicates('uid')
 
-    item_profile = data[["movie_id"]].drop_duplicates('movie_id')
+    item_profile = data[["img_id"]].drop_duplicates('img_id')
 
-    user_profile.set_index("user_id", inplace=True)
+    user_profile.set_index("uid", inplace=True)
 
-    user_item_list = data.groupby("user_id")['movie_id'].apply(list)
+    user_item_list = data.groupby("uid")['img_id'].apply(list)
 
     train_set, test_set = gen_data_set(data, SEQ_LEN, 0)
 
@@ -39,24 +49,25 @@ if __name__ == "__main__":
 
     # 2.count #unique features for each sparse field and generate feature config for sequence feature
 
-    embedding_dim = 16
-
-    user_feature_columns = [SparseFeat('user_id', feature_max_idx['user_id'], embedding_dim),
-                            SparseFeat("gender", feature_max_idx['gender'], embedding_dim),
-                            SparseFeat("age", feature_max_idx['age'], embedding_dim),
-                            SparseFeat("occupation", feature_max_idx['occupation'], embedding_dim),
-                            SparseFeat("zip", feature_max_idx['zip'], embedding_dim),
-                            VarLenSparseFeat(SparseFeat('hist_movie_id', feature_max_idx['movie_id'], embedding_dim, embedding_name="movie_id"), SEQ_LEN, 'mean', 'hist_len'),
-                            VarLenSparseFeat(SparseFeat('hist_genres', feature_max_idx['genres'], embedding_dim, embedding_name="genres"), SEQ_LEN, 'mean', 'hist_len')
+    user_feature_columns = [SparseFeat('uid', feature_max_idx['uid'], embedding_dim),
+                            SparseFeat("serverprovince", feature_max_idx['serverprovince'], embedding_dim),
+                            SparseFeat("servercity", feature_max_idx['servercity'], embedding_dim),
+                            SparseFeat("city_level", feature_max_idx['city_level'], embedding_dim),
+                            SparseFeat("nettype", feature_max_idx['nettype'], embedding_dim),
+                            SparseFeat("model", feature_max_idx['model'], embedding_dim),
+                            SparseFeat("os", feature_max_idx['os'], embedding_dim),
+                            SparseFeat("osversion", feature_max_idx['osversion'], embedding_dim),
+                            SparseFeat("brand", feature_max_idx['brand'], embedding_dim),
+                            VarLenSparseFeat(SparseFeat('hist_img_id', feature_max_idx['img_id'], embedding_dim, embedding_name="img_id"), SEQ_LEN, 'mean', 'hist_len')
                             ]
 
-    item_feature_columns = [SparseFeat('movie_id', feature_max_idx['movie_id'], embedding_dim)]
+    item_feature_columns = [SparseFeat('img_id', feature_max_idx['img_id'], embedding_dim)]
 
     from collections import Counter
 
-    train_counter = Counter(train_model_input['movie_id'])
+    train_counter = Counter(train_model_input['img_id'])
     item_count = [train_counter.get(i, 0) for i in range(item_feature_columns[0].vocabulary_size)]
-    sampler_config = NegativeSampler('frequency', num_sampled=5, item_name='movie_id', item_count=item_count)
+    sampler_config = NegativeSampler('frequency', num_sampled=5, item_name='img_id', item_count=item_count)
 
     # 3.Define Model and train
 
@@ -76,7 +87,7 @@ if __name__ == "__main__":
 
     # 4. Generate user features for testing and full item features for retrieval
     test_user_model_input = test_model_input
-    all_item_model_input = {"movie_id": item_profile['movie_id'].values}
+    all_item_model_input = {"img_id": item_profile['img_id'].values}
 
     user_embedding_model = Model(inputs=model.user_input, outputs=model.user_embedding)
     item_embedding_model = Model(inputs=model.item_input, outputs=model.item_embedding)
@@ -112,7 +123,7 @@ if __name__ == "__main__":
     for k in range(k_max):
         user_emb = user_embs[:, k, :]
         D, I = index.search(np.ascontiguousarray(user_emb), topN)
-        for i, uid in tqdm(enumerate(test_user_model_input['user_id']), total=len(test_user_model_input['user_id'])):
+        for i, uid in tqdm(enumerate(test_user_model_input['uid']), total=len(test_user_model_input['uid'])):
             if np.abs(user_emb[i]).max() < 1e-8:
                 continue
             for score, itemid in zip(D[i], I[i]):
@@ -120,8 +131,8 @@ if __name__ == "__main__":
 
     s = []
     hit = 0
-    for i, uid in enumerate(test_user_model_input['user_id']):
-        pred = [item_profile['movie_id'].values[x[0]] for x in
+    for i, uid in enumerate(test_user_model_input['uid']):
+        pred = [item_profile['img_id'].values[x[0]] for x in
                 heapq.nlargest(topN, score_dict[uid].items(), key=lambda x: x[1])]
         filter_item = None
         recall_score = recall_N(test_true_label[uid], pred, N=topN)
@@ -130,4 +141,4 @@ if __name__ == "__main__":
             hit += 1
 
     print("recall", np.mean(s))
-    print("hr", hit / len(test_user_model_input['user_id']))
+    print("hr", hit / len(test_user_model_input['uid']))

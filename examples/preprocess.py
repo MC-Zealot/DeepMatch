@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import tensorflow as tf
+print("version: "+str(tf.__version__))
 from tensorflow.python.keras.preprocessing.sequence import pad_sequences
 from tqdm import tqdm
 
