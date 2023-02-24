@@ -93,7 +93,7 @@ def gen_data_set_sdm(data, seq_short_max_len=5, seq_prefer_max_len=50):
     return train_set, test_set
 
 def gen_data_set_v2(data, seq_max_len=50, negsample=0):
-    data.sort_values("timestamp", inplace=True)
+    data.sort_values("stamp", inplace=True)
     item_ids = data['img_id'].unique()
     # item_id_genres_map = dict(zip(data['movie_id'].values, data['genres'].values))
     train_set = []
@@ -210,11 +210,12 @@ def gen_model_input_v2(train_set, user_profile, seq_max_len):
     # train_genres = np.array([line[6] for line in train_set])
     train_seq_pad = pad_sequences(train_seq, maxlen=seq_max_len, padding='post', truncating='post', value=0)
     # train_seq_genres_pad = pad_sequences(train_seq_genres, maxlen=seq_max_len, padding='post', truncating='post', value=0)
-    train_model_input = {"user_id": train_uid,
-                         "movie_id": train_iid,
-                         "hist_movie_id": train_seq_pad
+    train_model_input = {"uid": train_uid,
+                         "img_id": train_iid,
+                         "hist_img_id": train_seq_pad,
                          # "hist_genres": train_seq_genres_pad,
-                         # "hist_len": train_hist_len, "genres": train_genres
+                         "hist_len": train_hist_len
+                         #"genres": train_genres
                          }
 
     for key in ["serverprovince", "servercity", "city_level", "nettype","model","os","osversion","brand"]:

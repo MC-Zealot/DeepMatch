@@ -26,8 +26,8 @@ if __name__ == "__main__":
                        "osversion",
                        "brand"
                        ]
-    SEQ_LEN = 10
-    embedding_dim = 10
+    SEQ_LEN = 50
+    embedding_dim = 50
 
     # 1.Label Encoding for sparse features,and process sequence features with `gen_date_set` and `gen_model_input`
 
